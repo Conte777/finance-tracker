@@ -34,3 +34,75 @@
 - **Frontend:** React, TypeScript, Vite, React Router, MUI (Material UI) + MUI X Charts.
 - **Backend (с ЛР2):** FastAPI, PostgreSQL, SQLAlchemy.
 - **Контроль версий:** Git.
+
+## Структура репозитория
+
+```
+lab01_05/
+├── frontend/          клиентское приложение (React + TypeScript + Vite)
+└── docs/screenshots/  скриншоты экранов
+```
+
+Frontend организован по методологии Feature-Sliced Design:
+
+```
+frontend/src/
+├── app/        точка сборки: провайдер темы, роутер
+├── pages/      экраны, по одному срезу на маршрут
+├── widgets/    крупные блоки интерфейса (каркас с навигацией)
+├── entities/   бизнес-сущности: типы и mock-данные
+│   ├── transaction/
+│   ├── category/
+│   └── budget/
+└── shared/     переиспользуемые UI-компоненты и утилиты форматирования
+```
+
+Слой `features/` (пользовательские действия с логикой) появится в ЛР3.
+
+## Запуск frontend
+
+Требуется Node.js 22+ и pnpm 9+.
+
+```bash
+cd frontend
+pnpm install
+pnpm dev        # http://localhost:5173
+```
+
+Другие команды:
+
+```bash
+pnpm build      # проверка типов (tsc) и production-сборка в dist/
+pnpm lint       # статический анализ (oxlint)
+pnpm preview    # просмотр production-сборки
+```
+
+На этапе ЛР1 все данные — mock (`src/entities/*/mock.ts`), запросов к серверу нет.
+
+## Скриншоты
+
+| Обзор | Операции |
+|---|---|
+| ![Обзор](docs/screenshots/01-dashboard.png) | ![Операции](docs/screenshots/02-transactions.png) |
+
+| Форма операции | Категории |
+|---|---|
+| ![Форма операции](docs/screenshots/03-transaction-form.png) | ![Категории](docs/screenshots/04-categories.png) |
+
+| Бюджеты | Отчёты |
+|---|---|
+| ![Бюджеты](docs/screenshots/05-budgets.png) | ![Отчёты](docs/screenshots/06-reports.png) |
+
+| Вход | Регистрация |
+|---|---|
+| ![Вход](docs/screenshots/07-login.png) | ![Регистрация](docs/screenshots/08-register.png) |
+
+| 404 | Тёмная тема |
+|---|---|
+| ![404](docs/screenshots/09-not-found.png) | ![Тёмная тема](docs/screenshots/10-dashboard-dark.png) |
+
+Мобильная версия (ширина 390 px):
+
+| Обзор | Меню | Операции |
+|---|---|---|
+| ![Обзор, мобильная](docs/screenshots/11-mobile-dashboard.png) | ![Меню, мобильная](docs/screenshots/12-mobile-drawer.png) | ![Операции, мобильная](docs/screenshots/13-mobile-transactions.png) |
