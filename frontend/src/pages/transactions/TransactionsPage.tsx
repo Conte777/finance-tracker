@@ -18,6 +18,8 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import useMediaQuery from '@mui/material/useMediaQuery'
+import { useTheme } from '@mui/material/styles'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -28,12 +30,15 @@ import { formatShortDate, formatSignedRub } from '@/shared/lib/format'
 import { operationsCount } from '@/shared/lib/plural'
 import { PageHeader } from '@/shared/ui'
 import { TransactionFormDialog } from './TransactionFormDialog'
+import { TransactionList } from './TransactionList'
 
 type TypeFilter = TransactionType | 'all'
 
 const ROWS_PER_PAGE = 10
 
 export function TransactionsPage() {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [search, setSearch] = useState('')
@@ -121,66 +126,70 @@ export function TransactionsPage() {
           />
         </Stack>
 
-        <TableContainer>
-          <Table sx={{ minWidth: 640 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Дата</TableCell>
-                <TableCell>Категория</TableCell>
-                <TableCell>Комментарий</TableCell>
-                <TableCell align="right">Сумма</TableCell>
-                <TableCell align="right" sx={{ width: 104 }} />
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {rows.map((t) => {
-                const category = categoryById.get(t.categoryId)!
-                return (
-                  <TableRow key={t.id} hover>
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatShortDate(t.date)}</TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-                        <CategoryAvatar category={category} size={32} />
-                        <span>{category.name}</span>
-                      </Stack>
-                    </TableCell>
-                    <TableCell sx={{ color: 'text.secondary' }}>{t.comment}</TableCell>
-                    <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                      <Chip
-                        size="small"
-                        variant="outlined"
-                        color={t.type === 'income' ? 'success' : 'default'}
-                        label={formatSignedRub(t.amount, t.type === 'income')}
-                        sx={{ fontWeight: 500 }}
-                      />
-                    </TableCell>
-                    <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                      <Tooltip title="Изменить">
-                        <IconButton size="small" onClick={() => openDialog(t)}>
-                          <EditOutlinedIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Удалить">
-                        <IconButton size="small">
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+        {isMobile ? (
+          <TransactionList transactions={rows} onEdit={openDialog} />
+        ) : (
+          <TableContainer>
+            <Table sx={{ minWidth: 640 }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Дата</TableCell>
+                  <TableCell>Категория</TableCell>
+                  <TableCell>Комментарий</TableCell>
+                  <TableCell align="right">Сумма</TableCell>
+                  <TableCell align="right" sx={{ width: 104 }} />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((t) => {
+                  const category = categoryById.get(t.categoryId)!
+                  return (
+                    <TableRow key={t.id} hover>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatShortDate(t.date)}</TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+                          <CategoryAvatar category={category} size={32} />
+                          <span>{category.name}</span>
+                        </Stack>
+                      </TableCell>
+                      <TableCell sx={{ color: 'text.secondary' }}>{t.comment}</TableCell>
+                      <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                        <Chip
+                          size="small"
+                          variant="outlined"
+                          color={t.type === 'income' ? 'success' : 'default'}
+                          label={formatSignedRub(t.amount, t.type === 'income')}
+                          sx={{ fontWeight: 500 }}
+                        />
+                      </TableCell>
+                      <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                        <Tooltip title="Изменить">
+                          <IconButton size="small" onClick={() => openDialog(t)}>
+                            <EditOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Удалить">
+                          <IconButton size="small">
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+                {rows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5}>
+                      <Typography sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>
+                        Операции не найдены
+                      </Typography>
                     </TableCell>
                   </TableRow>
-                )
-              })}
-              {rows.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5}>
-                    <Typography sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>
-                      Операции не найдены
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
         <TablePagination
           component="div"
           count={filtered.length}
