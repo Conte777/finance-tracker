@@ -29,7 +29,13 @@ export const theme = createTheme({
     MuiCard: {
       defaultProps: { variant: 'outlined' },
     },
+    MuiCardHeader: {
+      defaultProps: { slotProps: { title: { variant: 'h6' } } },
+    },
     MuiButton: {
+      styleOverrides: { root: { textTransform: 'none' } },
+    },
+    MuiToggleButton: {
       styleOverrides: { root: { textTransform: 'none' } },
     },
   },

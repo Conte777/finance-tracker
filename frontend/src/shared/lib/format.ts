@@ -10,10 +10,28 @@ const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
   year: 'numeric',
 })
 
+const shortDateFormatter = new Intl.DateTimeFormat('ru-RU', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+})
+
 const monthFormatter = new Intl.DateTimeFormat('ru-RU', { month: 'short' })
+
+const monthYearFormatter = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' })
 
 export const formatRub = (amount: number) => rubFormatter.format(amount)
 
+export const formatSignedRub = (amount: number, isIncome: boolean) =>
+  `${isIncome ? '+' : '−'}${rubFormatter.format(amount)}`
+
 export const formatDate = (iso: string) => dateFormatter.format(new Date(iso))
 
-export const formatMonth = (iso: string) => monthFormatter.format(new Date(iso))
+export const formatShortDate = (iso: string) => shortDateFormatter.format(new Date(iso))
+
+export const formatMonth = (month: string) => monthFormatter.format(new Date(`${month}-01`))
+
+export const formatMonthYear = (month: string) => {
+  const label = monthYearFormatter.format(new Date(`${month}-01`))
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
