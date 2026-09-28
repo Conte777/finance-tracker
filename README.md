@@ -32,7 +32,8 @@
 ## Стек
 
 - **Frontend:** React, TypeScript, Vite, React Router, MUI (Material UI) + MUI X Charts.
-- **Backend (с ЛР2):** FastAPI, PostgreSQL, SQLAlchemy.
+- **Backend:** Python 3.14, FastAPI, SQLAlchemy 2 (async, asyncpg), Alembic, Pydantic.
+- **База данных:** PostgreSQL 17 (в Docker).
 - **Контроль версий:** Git.
 
 ## Структура репозитория
@@ -40,6 +41,7 @@
 ```
 lab01_05/
 ├── frontend/          клиентское приложение (React + TypeScript + Vite)
+├── backend/           REST API (FastAPI + SQLAlchemy + PostgreSQL)
 └── docs/screenshots/  скриншоты экранов
 ```
 
@@ -106,3 +108,87 @@ pnpm preview    # просмотр production-сборки
 | Обзор | Меню | Операции |
 |---|---|---|
 | ![Обзор, мобильная](docs/screenshots/11-mobile-dashboard.png) | ![Меню, мобильная](docs/screenshots/12-mobile-drawer.png) | ![Операции, мобильная](docs/screenshots/13-mobile-transactions.png) |
+
+## Backend
+
+### Структура
+
+```
+backend/
+├── app/
+│   ├── main.py        сборка приложения: роутеры, обработчики ошибок
+│   ├── config.py      настройки из переменных окружения (.env)
+│   ├── db.py          движок, фабрика сессий, зависимость SessionDep
+│   ├── errors.py      доменные ошибки → HTTP-статусы
+│   ├── models/        модели SQLAlchemy (таблицы)
+│   ├── schemas/       схемы Pydantic: валидация запросов и ответов
+│   ├── services/      операции с данными и бизнес-правила
+│   ├── api/           маршруты API, по роутеру на сущность
+│   └── seed.py        заполнение БД демонстрационными данными
+├── migrations/        миграции Alembic
+└── docker-compose.yml PostgreSQL для локальной разработки
+```
+
+### Модель данных
+
+```
+categories 1 ──< transactions
+categories 1 ──○ budgets
+```
+
+| Таблица | Поля | Ограничения |
+|---|---|---|
+| `categories` | `id`, `name`, `type` (`income`/`expense`), `color`, `icon` | `name` уникально в пределах `type` |
+| `transactions` | `id`, `category_id` → `categories.id`, `amount`, `date`, `comment` | `amount > 0`; удалить категорию с операциями нельзя (`ON DELETE RESTRICT`) |
+| `budgets` | `id`, `category_id` → `categories.id`, `limit` | одна запись на категорию, только для расходных; удаляется вместе с категорией (`ON DELETE CASCADE`) |
+
+Суммы хранятся как `NUMERIC(12,2)`. Тип операции (доход/расход) не хранится отдельно, а берётся из её категории. Так операция не может противоречить своей категории. Бюджет — месячный лимит на категорию, действует каждый месяц.
+
+Пользователи и привязка данных к ним появятся в ЛР4.
+
+### API
+
+Интерактивная документация — http://localhost:8000/docs.
+
+| Метод | Путь | Назначение |
+|---|---|---|
+| `GET` | `/categories?type=` | список категорий |
+| `GET`, `PATCH`, `DELETE` | `/categories/{id}` | получить, изменить, удалить категорию |
+| `POST` | `/categories` | создать категорию |
+| `GET` | `/transactions` | операции с фильтрами `type`, `category_id`, `q`, `date_from`, `date_to` и пагинацией `page`, `size` (≤ 100); ответ `{"items": [...], "total": N}` |
+| `GET`, `PATCH`, `DELETE` | `/transactions/{id}` | получить, изменить, удалить операцию |
+| `POST` | `/transactions` | создать операцию |
+| `GET` | `/budgets` | список бюджетов |
+| `GET`, `PATCH`, `DELETE` | `/budgets/{id}` | получить, изменить лимит, удалить бюджет |
+| `POST` | `/budgets` | создать бюджет |
+
+Ошибки возвращаются в формате `{"detail": ...}`:
+
+| Статус | Когда |
+|---|---|
+| `404` | записи из URL не существует |
+| `409` | конфликт с существующими данными: дубликат категории или бюджета, удаление категории с операциями, смена типа категории с операциями или бюджетом |
+| `422` | некорректные данные: ошибки валидации полей, ссылка на несуществующую категорию, бюджет на доходную категорию |
+
+### Запуск backend
+
+Требуется Python 3.14, [uv](https://docs.astral.sh/uv/) и Docker.
+
+```bash
+cd backend
+cp .env.example .env          # задайте свой пароль БД
+docker compose up -d --wait   # PostgreSQL на localhost:5432
+uv sync                       # зависимости
+uv run alembic upgrade head   # создание таблиц
+uv run python -m app.seed     # демонстрационные данные (очищает таблицы!)
+uv run fastapi dev app/main.py  # http://localhost:8000
+```
+
+Другие команды:
+
+```bash
+uv run alembic revision --autogenerate -m "..."  # новая миграция после изменения моделей
+uv run alembic downgrade base                    # откатить все миграции
+uv run ruff check . && uv run ruff format .      # линтер и форматирование
+docker compose down                              # остановить БД (данные остаются в volume pgdata)
+```
