@@ -1,16 +1,21 @@
+import { useState } from 'react'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Chip from '@mui/material/Chip'
 import Grid from '@mui/material/Grid'
+import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
+import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import AddIcon from '@mui/icons-material/Add'
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined'
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import { useQuery } from '@tanstack/react-query'
+import { DeleteBudgetDialog } from '@/features/delete-budget'
 import { budgetsQuery, type Budget } from '@/entities/budget'
 import { CategoryAvatar, categoriesQuery, indexCategories, type Category } from '@/entities/category'
 import {
@@ -70,6 +75,8 @@ type BudgetsContentProps = {
 }
 
 function BudgetsContent({ budgets: rawBudgets, categories, transactions }: BudgetsContentProps) {
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState<Budget | null>(null)
   const categoryById = indexCategories(categories)
   const spentByCategory = sumByCategory(transactions)
   const budgets = rawBudgets.map((budget) => {
@@ -109,6 +116,18 @@ function BudgetsContent({ budgets: rawBudgets, categories, transactions }: Budge
                       {category.name}
                     </Typography>
                     <Chip size="small" color={status.color} label={status.label} />
+                    <Tooltip title="Удалить">
+                      <IconButton
+                        size="small"
+                        edge="end"
+                        onClick={() => {
+                          setDeleting(budget)
+                          setDeleteOpen(true)
+                        }}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </Stack>
                   <Typography variant="h6" component="p">
                     {formatRub(budget.spent)}{' '}
@@ -136,6 +155,12 @@ function BudgetsContent({ budgets: rawBudgets, categories, transactions }: Budge
           )
         })}
       </Grid>
+      <DeleteBudgetDialog
+        open={deleteOpen}
+        budget={deleting}
+        categoryName={deleting ? (categoryById.get(deleting.categoryId)?.name ?? '') : ''}
+        onClose={() => setDeleteOpen(false)}
+      />
     </>
   )
 }

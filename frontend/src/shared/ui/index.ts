@@ -1,4 +1,5 @@
 export { AuthCard } from './AuthCard'
+export { ConfirmDialog } from './ConfirmDialog'
 export { PageHeader } from './PageHeader'
 export { QueryState } from './QueryState'
 export { StatCard } from './StatCard'

@@ -25,6 +25,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import SearchIcon from '@mui/icons-material/Search'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { DeleteTransactionDialog } from '@/features/delete-transaction'
 import { TransactionFormDialog } from '@/features/transaction-form'
 import { CategoryAvatar, categoriesQuery, indexCategories } from '@/entities/category'
 import { transactionsQuery, type Transaction, type TransactionType } from '@/entities/transaction'
@@ -46,6 +47,8 @@ export function TransactionsPage() {
   const [page, setPage] = useState(0)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState<Transaction | null>(null)
 
   const categories = useQuery(categoriesQuery())
   const transactions = useQuery({
@@ -61,12 +64,19 @@ export function TransactionsPage() {
 
   const rows = transactions.data?.items ?? []
   const total = transactions.data?.total ?? 0
+  const lastPage = Math.max(0, Math.ceil(total / ROWS_PER_PAGE) - 1)
+  if (transactions.data && !transactions.isPlaceholderData && page > lastPage) setPage(lastPage)
   const categoryById = indexCategories(categories.data ?? [])
   const categoryOptions = (categories.data ?? []).filter((c) => typeFilter === 'all' || c.type === typeFilter)
 
   const openDialog = (transaction: Transaction | null) => {
     setEditing(transaction)
     setDialogOpen(true)
+  }
+
+  const openDelete = (transaction: Transaction) => {
+    setDeleting(transaction)
+    setDeleteOpen(true)
   }
 
   const changeType = (next: TypeFilter | null) => {
@@ -136,7 +146,7 @@ export function TransactionsPage() {
 
         <QueryState queries={[categories, transactions]}>
           {isMobile ? (
-            <TransactionList transactions={rows} categoryById={categoryById} onEdit={openDialog} />
+            <TransactionList transactions={rows} categoryById={categoryById} onEdit={openDialog} onDelete={openDelete} />
           ) : (
             <TableContainer>
               <Table sx={{ minWidth: 640 }}>
@@ -178,7 +188,7 @@ export function TransactionsPage() {
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Удалить">
-                            <IconButton size="small">
+                            <IconButton size="small" onClick={() => openDelete(t)}>
                               <DeleteOutlineIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
@@ -212,6 +222,7 @@ export function TransactionsPage() {
       </Card>
 
       <TransactionFormDialog open={dialogOpen} transaction={editing} onClose={() => setDialogOpen(false)} />
+      <DeleteTransactionDialog open={deleteOpen} transaction={deleting} onClose={() => setDeleteOpen(false)} />
     </>
   )
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
@@ -15,6 +16,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import Typography from '@mui/material/Typography'
 import { useQuery } from '@tanstack/react-query'
 import { CategoryAvatar, categoriesQuery, categoryTypeLabels, type Category, type CategoryType } from '@/entities/category'
+import { DeleteCategoryDialog } from '@/features/delete-category'
 import { ALL_TRANSACTIONS, transactionsQuery, type Transaction } from '@/entities/transaction'
 import { operationsCount } from '@/shared/lib/plural'
 import { PageHeader, QueryState } from '@/shared/ui'
@@ -51,7 +53,14 @@ type CategoriesContentProps = {
 }
 
 function CategoriesContent({ categories: allCategories, transactions }: CategoriesContentProps) {
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState<Category | null>(null)
   const usage = (categoryId: number) => transactions.filter((t) => t.categoryId === categoryId).length
+
+  const openDelete = (category: Category) => {
+    setDeleting(category)
+    setDeleteOpen(true)
+  }
 
   return (
     <>
@@ -81,7 +90,7 @@ function CategoriesContent({ categories: allCategories, transactions }: Categori
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Удалить">
-                            <IconButton size="small" edge="end">
+                            <IconButton size="small" edge="end" onClick={() => openDelete(category)}>
                               <DeleteOutlineIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
@@ -100,6 +109,7 @@ function CategoriesContent({ categories: allCategories, transactions }: Categori
           )
         })}
       </Grid>
+      <DeleteCategoryDialog open={deleteOpen} category={deleting} onClose={() => setDeleteOpen(false)} />
     </>
   )
 }
