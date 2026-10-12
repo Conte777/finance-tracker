@@ -12,15 +12,18 @@ import Tooltip from '@mui/material/Tooltip'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
-import { CategoryAvatar, categoryTypeLabels, mockCategories, type CategoryType } from '@/entities/category'
-import { mockTransactions } from '@/entities/transaction'
+import Typography from '@mui/material/Typography'
+import { useQuery } from '@tanstack/react-query'
+import { CategoryAvatar, categoriesQuery, categoryTypeLabels, type Category, type CategoryType } from '@/entities/category'
+import { ALL_TRANSACTIONS, transactionsQuery, type Transaction } from '@/entities/transaction'
 import { operationsCount } from '@/shared/lib/plural'
-import { PageHeader } from '@/shared/ui'
+import { PageHeader, QueryState } from '@/shared/ui'
 
 const categoryTypes: CategoryType[] = ['expense', 'income']
 
 export function CategoriesPage() {
-  const usage = (categoryId: string) => mockTransactions.filter((t) => t.categoryId === categoryId).length
+  const categories = useQuery(categoriesQuery())
+  const transactions = useQuery(transactionsQuery({ size: ALL_TRANSACTIONS }))
 
   return (
     <>
@@ -33,9 +36,28 @@ export function CategoriesPage() {
           </Button>
         }
       />
+      <QueryState queries={[categories, transactions]}>
+        {categories.data && transactions.data && (
+          <CategoriesContent categories={categories.data} transactions={transactions.data.items} />
+        )}
+      </QueryState>
+    </>
+  )
+}
+
+type CategoriesContentProps = {
+  categories: Category[]
+  transactions: Transaction[]
+}
+
+function CategoriesContent({ categories: allCategories, transactions }: CategoriesContentProps) {
+  const usage = (categoryId: number) => transactions.filter((t) => t.categoryId === categoryId).length
+
+  return (
+    <>
       <Grid container spacing={2}>
         {categoryTypes.map((type) => {
-          const categories = mockCategories.filter((c) => c.type === type)
+          const categories = allCategories.filter((c) => c.type === type)
           return (
             <Grid key={type} size={{ xs: 12, md: 6 }}>
               <Card>
@@ -43,6 +65,9 @@ export function CategoriesPage() {
                   title={categoryTypeLabels[type]}
                   action={<Chip label={categories.length} color={type === 'income' ? 'success' : 'default'} />}
                 />
+                {categories.length === 0 && (
+                  <Typography sx={{ px: 2, pb: 3, color: 'text.secondary' }}>Категорий пока нет</Typography>
+                )}
                 <List disablePadding>
                   {categories.map((category) => (
                     <ListItem

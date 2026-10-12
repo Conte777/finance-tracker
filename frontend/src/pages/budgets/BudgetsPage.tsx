@@ -10,11 +10,19 @@ import AddIcon from '@mui/icons-material/Add'
 import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined'
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
-import { mockBudgets } from '@/entities/budget'
-import { CategoryAvatar, categoryById } from '@/entities/category'
-import { CURRENT_MONTH, isInMonth, mockTransactions, sumByCategory } from '@/entities/transaction'
+import { useQuery } from '@tanstack/react-query'
+import { budgetsQuery, type Budget } from '@/entities/budget'
+import { CategoryAvatar, categoriesQuery, indexCategories, type Category } from '@/entities/category'
+import {
+  ALL_TRANSACTIONS,
+  CURRENT_MONTH,
+  monthRange,
+  sumByCategory,
+  transactionsQuery,
+  type Transaction,
+} from '@/entities/transaction'
 import { formatMonthYear, formatRub } from '@/shared/lib/format'
-import { PageHeader, StatCard } from '@/shared/ui'
+import { PageHeader, QueryState, StatCard } from '@/shared/ui'
 
 const WARNING_THRESHOLD = 80
 
@@ -25,16 +33,11 @@ const statusOf = (percent: number) => {
 }
 
 export function BudgetsPage() {
-  const spentByCategory = sumByCategory(
-    mockTransactions.filter((t) => t.type === 'expense' && isInMonth(t, CURRENT_MONTH)),
+  const budgets = useQuery(budgetsQuery())
+  const categories = useQuery(categoriesQuery())
+  const transactions = useQuery(
+    transactionsQuery({ type: 'expense', ...monthRange(CURRENT_MONTH), size: ALL_TRANSACTIONS }),
   )
-  const budgets = mockBudgets.map((budget) => {
-    const spent = spentByCategory.get(budget.categoryId) ?? 0
-    return { ...budget, spent, percent: Math.round((spent / budget.limit) * 100) }
-  })
-  const totalLimit = budgets.reduce((sum, b) => sum + b.limit, 0)
-  const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0)
-  const exceeded = budgets.filter((b) => b.percent > 100).length
 
   return (
     <>
@@ -47,7 +50,38 @@ export function BudgetsPage() {
           </Button>
         }
       />
+      <QueryState
+        queries={[budgets, categories, transactions]}
+        empty={budgets.data?.length === 0}
+        emptyText="Бюджетов пока нет. Добавьте лимит на расходную категорию."
+      >
+        {budgets.data && categories.data && transactions.data && (
+          <BudgetsContent budgets={budgets.data} categories={categories.data} transactions={transactions.data.items} />
+        )}
+      </QueryState>
+    </>
+  )
+}
 
+type BudgetsContentProps = {
+  budgets: Budget[]
+  categories: Category[]
+  transactions: Transaction[]
+}
+
+function BudgetsContent({ budgets: rawBudgets, categories, transactions }: BudgetsContentProps) {
+  const categoryById = indexCategories(categories)
+  const spentByCategory = sumByCategory(transactions)
+  const budgets = rawBudgets.map((budget) => {
+    const spent = spentByCategory.get(budget.categoryId) ?? 0
+    return { ...budget, spent, percent: Math.round((spent / budget.limit) * 100) }
+  })
+  const totalLimit = budgets.reduce((sum, b) => sum + b.limit, 0)
+  const totalSpent = budgets.reduce((sum, b) => sum + b.spent, 0)
+  const exceeded = budgets.filter((b) => b.percent > 100).length
+
+  return (
+    <>
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 4 }}>
           <StatCard label="Общий лимит" value={formatRub(totalLimit)} icon={<AccountBalanceOutlinedIcon />} color="primary" />

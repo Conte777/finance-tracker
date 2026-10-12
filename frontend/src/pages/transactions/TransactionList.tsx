@@ -3,16 +3,17 @@ import ListItemAvatar from '@mui/material/ListItemAvatar'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListItemText from '@mui/material/ListItemText'
 import Typography from '@mui/material/Typography'
-import { CategoryAvatar, categoryById } from '@/entities/category'
+import { CategoryAvatar, type Category } from '@/entities/category'
 import type { Transaction } from '@/entities/transaction'
 import { formatShortDate, formatSignedRub } from '@/shared/lib/format'
 
 type TransactionListProps = {
   transactions: Transaction[]
+  categoryById: Map<number, Category>
   onEdit: (transaction: Transaction) => void
 }
 
-export function TransactionList({ transactions, onEdit }: TransactionListProps) {
+export function TransactionList({ transactions, categoryById, onEdit }: TransactionListProps) {
   if (transactions.length === 0) {
     return (
       <Typography sx={{ py: 4, textAlign: 'center', color: 'text.secondary' }}>Операции не найдены</Typography>

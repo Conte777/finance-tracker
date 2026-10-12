@@ -1,5 +1,7 @@
 export type Budget = {
-  id: string
-  categoryId: string
+  id: number
+  categoryId: number
   limit: number
 }
+
+export type BudgetInput = Omit<Budget, 'id'>

@@ -1,3 +1,11 @@
-export type { Transaction, TransactionType } from './model'
-export { CURRENT_MONTH, isInMonth, sumAmount, sumByCategory } from './model'
-export { mockTransactions } from './mock'
+export type { Transaction, TransactionFilter, TransactionInput, TransactionPage, TransactionType } from './model'
+export { CURRENT_MONTH, isInMonth, monthRange, sumAmount, sumByCategory } from './model'
+export {
+  ALL_TRANSACTIONS,
+  createTransaction,
+  deleteTransaction,
+  getTransaction,
+  transactionKeys,
+  transactionsQuery,
+  updateTransaction,
+} from './api'
