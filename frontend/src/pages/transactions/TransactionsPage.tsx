@@ -25,12 +25,12 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import SearchIcon from '@mui/icons-material/Search'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { TransactionFormDialog } from '@/features/transaction-form'
 import { CategoryAvatar, categoriesQuery, indexCategories } from '@/entities/category'
 import { transactionsQuery, type Transaction, type TransactionType } from '@/entities/transaction'
 import { formatShortDate, formatSignedRub } from '@/shared/lib/format'
 import { operationsCount } from '@/shared/lib/plural'
 import { PageHeader, QueryState } from '@/shared/ui'
-import { TransactionFormDialog } from './TransactionFormDialog'
 import { TransactionList } from './TransactionList'
 
 type TypeFilter = TransactionType | 'all'
@@ -211,12 +211,7 @@ export function TransactionsPage() {
         />
       </Card>
 
-      <TransactionFormDialog
-        open={dialogOpen}
-        transaction={editing}
-        categories={categories.data ?? []}
-        onClose={() => setDialogOpen(false)}
-      />
+      <TransactionFormDialog open={dialogOpen} transaction={editing} onClose={() => setDialogOpen(false)} />
     </>
   )
 }
