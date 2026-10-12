@@ -1,18 +1,14 @@
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
 import InputAdornment from '@mui/material/InputAdornment'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
-import useMediaQuery from '@mui/material/useMediaQuery'
-import { useTheme } from '@mui/material/styles'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Controller, useForm } from 'react-hook-form'
@@ -25,6 +21,7 @@ import {
   type TransactionInput,
 } from '@/entities/transaction'
 import { ApiError, errorMessage } from '@/shared/api'
+import { FormDialog } from '@/shared/ui'
 import { DEFAULT_DATE, transactionFormSchema, type TransactionFormResult, type TransactionFormValues } from './schema'
 
 type TransactionFormDialogProps = {
@@ -34,14 +31,10 @@ type TransactionFormDialogProps = {
 }
 
 export function TransactionFormDialog({ open, transaction, onClose }: TransactionFormDialogProps) {
-  const theme = useTheme()
-  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'))
-
   return (
-    <Dialog open={open} onClose={onClose} fullScreen={fullScreen} fullWidth maxWidth="xs">
-      <DialogTitle>{transaction ? 'Редактирование операции' : 'Новая операция'}</DialogTitle>
+    <FormDialog open={open} title={transaction ? 'Редактирование операции' : 'Новая операция'} onClose={onClose}>
       <TransactionForm key={transaction?.id ?? 'new'} transaction={transaction} onDone={onClose} />
-    </Dialog>
+    </FormDialog>
   )
 }
 

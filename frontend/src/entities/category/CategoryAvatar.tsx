@@ -32,7 +32,7 @@ const icons: Record<CategoryIconKey, SvgIconComponent> = {
 }
 
 type CategoryAvatarProps = {
-  category: Category
+  category: Pick<Category, 'color' | 'icon'>
   size?: number
 }
 
