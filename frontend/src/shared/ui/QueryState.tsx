@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
 import CircularProgress from '@mui/material/CircularProgress'
+import Fade from '@mui/material/Fade'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { errorMessage } from '@/shared/api'
@@ -44,9 +45,15 @@ export function QueryState({ queries, empty = false, emptyText = 'Данных �
     )
   }
 
-  if (empty) {
-    return <Typography sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>{emptyText}</Typography>
-  }
-
-  return children
+  return (
+    <Fade in>
+      <div>
+        {empty ? (
+          <Typography sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>{emptyText}</Typography>
+        ) : (
+          children
+        )}
+      </div>
+    </Fade>
+  )
 }

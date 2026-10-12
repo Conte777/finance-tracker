@@ -4,6 +4,7 @@ import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Chip from '@mui/material/Chip'
 import Grid from '@mui/material/Grid'
+import Grow from '@mui/material/Grow'
 import IconButton from '@mui/material/IconButton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
@@ -16,6 +17,7 @@ import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlin
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import { useQuery } from '@tanstack/react-query'
+import { TransitionGroup } from 'react-transition-group'
 import { BudgetFormDialog } from '@/features/budget-form'
 import { DeleteBudgetDialog } from '@/features/delete-budget'
 import { budgetsQuery, type Budget } from '@/entities/budget'
@@ -118,63 +120,67 @@ function BudgetsContent({ budgets: rawBudgets, categories, transactions, onEdit 
       </Grid>
 
       <Grid container spacing={2}>
-        {budgets.map((budget) => {
-          const category = categoryById.get(budget.categoryId)!
-          const status = statusOf(budget.percent)
-          const left = budget.limit - budget.spent
-          return (
-            <Grid key={budget.id} size={{ xs: 12, sm: 6, lg: 4 }}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 2 }}>
-                    <CategoryAvatar category={category} />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 500, flexGrow: 1 }}>
-                      {category.name}
-                    </Typography>
-                    <Chip size="small" color={status.color} label={status.label} />
-                    <Tooltip title="Изменить">
-                      <IconButton size="small" onClick={() => onEdit(budget)}>
-                        <EditOutlinedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Удалить">
-                      <IconButton
-                        size="small"
-                        edge="end"
-                        onClick={() => {
-                          setDeleting(budget)
-                          setDeleteOpen(true)
-                        }}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                  <Typography variant="h6" component="p">
-                    {formatRub(budget.spent)}{' '}
-                    <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
-                      из {formatRub(budget.limit)}
-                    </Typography>
-                  </Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    color={status.color}
-                    value={Math.min(budget.percent, 100)}
-                    sx={{ height: 8, borderRadius: 4, my: 1.5 }}
-                  />
-                  <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                      {budget.percent} %
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: left < 0 ? 'error.main' : 'text.secondary' }}>
-                      {left < 0 ? `Перерасход ${formatRub(-left)}` : `Осталось ${formatRub(left)}`}
-                    </Typography>
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Grid>
-          )
-        })}
+        <TransitionGroup component={null}>
+          {budgets.map((budget) => {
+            const category = categoryById.get(budget.categoryId)!
+            const status = statusOf(budget.percent)
+            const left = budget.limit - budget.spent
+            return (
+              <Grow key={budget.id}>
+                <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
+                  <Card sx={{ height: '100%' }}>
+                    <CardContent>
+                      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 2 }}>
+                        <CategoryAvatar category={category} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 500, flexGrow: 1 }}>
+                          {category.name}
+                        </Typography>
+                        <Chip size="small" color={status.color} label={status.label} />
+                        <Tooltip title="Изменить">
+                          <IconButton size="small" onClick={() => onEdit(budget)}>
+                            <EditOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Удалить">
+                          <IconButton
+                            size="small"
+                            edge="end"
+                            onClick={() => {
+                              setDeleting(budget)
+                              setDeleteOpen(true)
+                            }}
+                          >
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                      <Typography variant="h6" component="p">
+                        {formatRub(budget.spent)}{' '}
+                        <Typography component="span" variant="body2" sx={{ color: 'text.secondary' }}>
+                          из {formatRub(budget.limit)}
+                        </Typography>
+                      </Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        color={status.color}
+                        value={Math.min(budget.percent, 100)}
+                        sx={{ height: 8, borderRadius: 4, my: 1.5 }}
+                      />
+                      <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                          {budget.percent} %
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: left < 0 ? 'error.main' : 'text.secondary' }}>
+                          {left < 0 ? `Перерасход ${formatRub(-left)}` : `Осталось ${formatRub(left)}`}
+                        </Typography>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grow>
+            )
+          })}
+        </TransitionGroup>
       </Grid>
       <DeleteBudgetDialog
         open={deleteOpen}

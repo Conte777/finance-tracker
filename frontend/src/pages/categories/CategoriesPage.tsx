@@ -3,6 +3,7 @@ import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import Chip from '@mui/material/Chip'
+import Collapse from '@mui/material/Collapse'
 import Grid from '@mui/material/Grid'
 import IconButton from '@mui/material/IconButton'
 import List from '@mui/material/List'
@@ -15,6 +16,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import Typography from '@mui/material/Typography'
 import { useQuery } from '@tanstack/react-query'
+import { TransitionGroup } from 'react-transition-group'
 import { CategoryAvatar, categoriesQuery, categoryTypeLabels, type Category, type CategoryType } from '@/entities/category'
 import { CategoryFormDialog } from '@/features/category-form'
 import { DeleteCategoryDialog } from '@/features/delete-category'
@@ -88,31 +90,34 @@ function CategoriesContent({ categories: allCategories, transactions, onEdit }: 
                   <Typography sx={{ px: 2, pb: 3, color: 'text.secondary' }}>Категорий пока нет</Typography>
                 )}
                 <List disablePadding>
-                  {categories.map((category) => (
-                    <ListItem
-                      key={category.id}
-                      divider
-                      secondaryAction={
-                        <>
-                          <Tooltip title="Изменить">
-                            <IconButton size="small" onClick={() => onEdit(category)}>
-                              <EditOutlinedIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Удалить">
-                            <IconButton size="small" edge="end" onClick={() => openDelete(category)}>
-                              <DeleteOutlineIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </>
-                      }
-                    >
-                      <ListItemAvatar>
-                        <CategoryAvatar category={category} />
-                      </ListItemAvatar>
-                      <ListItemText primary={category.name} secondary={operationsCount(usage(category.id))} />
-                    </ListItem>
-                  ))}
+                  <TransitionGroup>
+                    {categories.map((category) => (
+                      <Collapse key={category.id}>
+                        <ListItem
+                          divider
+                          secondaryAction={
+                            <>
+                              <Tooltip title="Изменить">
+                                <IconButton size="small" onClick={() => onEdit(category)}>
+                                  <EditOutlinedIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Удалить">
+                                <IconButton size="small" edge="end" onClick={() => openDelete(category)}>
+                                  <DeleteOutlineIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          }
+                        >
+                          <ListItemAvatar>
+                            <CategoryAvatar category={category} />
+                          </ListItemAvatar>
+                          <ListItemText primary={category.name} secondary={operationsCount(usage(category.id))} />
+                        </ListItem>
+                      </Collapse>
+                    ))}
+                  </TransitionGroup>
                 </List>
               </Card>
             </Grid>
