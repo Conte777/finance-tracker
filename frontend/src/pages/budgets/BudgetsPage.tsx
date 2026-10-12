@@ -11,10 +11,12 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined'
 import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined'
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined'
 import { useQuery } from '@tanstack/react-query'
+import { BudgetFormDialog } from '@/features/budget-form'
 import { DeleteBudgetDialog } from '@/features/delete-budget'
 import { budgetsQuery, type Budget } from '@/entities/budget'
 import { CategoryAvatar, categoriesQuery, indexCategories, type Category } from '@/entities/category'
@@ -38,11 +40,18 @@ const statusOf = (percent: number) => {
 }
 
 export function BudgetsPage() {
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<Budget | null>(null)
   const budgets = useQuery(budgetsQuery())
   const categories = useQuery(categoriesQuery())
   const transactions = useQuery(
     transactionsQuery({ type: 'expense', ...monthRange(CURRENT_MONTH), size: ALL_TRANSACTIONS }),
   )
+
+  const openForm = (budget: Budget | null) => {
+    setEditing(budget)
+    setFormOpen(true)
+  }
 
   return (
     <>
@@ -50,7 +59,7 @@ export function BudgetsPage() {
         title="Бюджеты"
         subtitle={`Лимиты расходов на ${formatMonthYear(CURRENT_MONTH).toLowerCase()}`}
         action={
-          <Button variant="contained" startIcon={<AddIcon />}>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={() => openForm(null)}>
             Добавить бюджет
           </Button>
         }
@@ -61,9 +70,15 @@ export function BudgetsPage() {
         emptyText="Бюджетов пока нет. Добавьте лимит на расходную категорию."
       >
         {budgets.data && categories.data && transactions.data && (
-          <BudgetsContent budgets={budgets.data} categories={categories.data} transactions={transactions.data.items} />
+          <BudgetsContent
+            budgets={budgets.data}
+            categories={categories.data}
+            transactions={transactions.data.items}
+            onEdit={openForm}
+          />
         )}
       </QueryState>
+      <BudgetFormDialog open={formOpen} budget={editing} onClose={() => setFormOpen(false)} />
     </>
   )
 }
@@ -72,14 +87,15 @@ type BudgetsContentProps = {
   budgets: Budget[]
   categories: Category[]
   transactions: Transaction[]
+  onEdit: (budget: Budget) => void
 }
 
-function BudgetsContent({ budgets: rawBudgets, categories, transactions }: BudgetsContentProps) {
+function BudgetsContent({ budgets: rawBudgets, categories, transactions, onEdit }: BudgetsContentProps) {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState<Budget | null>(null)
   const categoryById = indexCategories(categories)
   const spentByCategory = sumByCategory(transactions)
-  const budgets = rawBudgets.map((budget) => {
+  const budgets = rawBudgets.filter((budget) => categoryById.has(budget.categoryId)).map((budget) => {
     const spent = spentByCategory.get(budget.categoryId) ?? 0
     return { ...budget, spent, percent: Math.round((spent / budget.limit) * 100) }
   })
@@ -116,6 +132,11 @@ function BudgetsContent({ budgets: rawBudgets, categories, transactions }: Budge
                       {category.name}
                     </Typography>
                     <Chip size="small" color={status.color} label={status.label} />
+                    <Tooltip title="Изменить">
+                      <IconButton size="small" onClick={() => onEdit(budget)}>
+                        <EditOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip title="Удалить">
                       <IconButton
                         size="small"
