@@ -9,7 +9,7 @@ import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { budgetKeys, budgetsQuery, createBudget, updateBudget, type Budget, type BudgetInput } from '@/entities/budget'
 import { categoriesQuery } from '@/entities/category'
 import { ApiError, errorMessage } from '@/shared/api'
@@ -39,7 +39,7 @@ function BudgetForm({ budget, onDone }: BudgetFormProps) {
   const queryClient = useQueryClient()
   const { data: categories = [] } = useQuery(categoriesQuery())
   const { data: budgets = [] } = useQuery(budgetsQuery())
-  const { control, handleSubmit, setError, watch } = useForm<BudgetFormValues, unknown, BudgetFormResult>({
+  const { control, handleSubmit, setError } = useForm<BudgetFormValues, unknown, BudgetFormResult>({
     resolver: zodResolver(budgetFormSchema),
     defaultValues: {
       categoryId: budget ? String(budget.categoryId) : '',
@@ -62,7 +62,7 @@ function BudgetForm({ budget, onDone }: BudgetFormProps) {
     },
   })
 
-  const selectedId = watch('categoryId')
+  const selectedId = useWatch({ control, name: 'categoryId' })
   const budgeted = new Set(budgets.map((b) => b.categoryId))
   const options = categories.filter(
     (c) => String(c.id) === selectedId || (c.type === 'expense' && !budgeted.has(c.id)),

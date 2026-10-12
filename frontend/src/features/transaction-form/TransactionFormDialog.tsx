@@ -11,7 +11,7 @@ import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { categoriesQuery } from '@/entities/category'
 import {
   createTransaction,
@@ -46,7 +46,7 @@ type TransactionFormProps = {
 function TransactionForm({ transaction, onDone }: TransactionFormProps) {
   const queryClient = useQueryClient()
   const { data: allCategories = [] } = useQuery(categoriesQuery())
-  const { control, handleSubmit, watch, setValue, setError } = useForm<TransactionFormValues, unknown, TransactionFormResult>({
+  const { control, handleSubmit, setValue, setError } = useForm<TransactionFormValues, unknown, TransactionFormResult>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
       type: transaction?.type ?? 'expense',
@@ -71,7 +71,7 @@ function TransactionForm({ transaction, onDone }: TransactionFormProps) {
     },
   })
 
-  const type = watch('type')
+  const type = useWatch({ control, name: 'type' })
   const categories = allCategories.filter((c) => c.type === type)
 
   const submit = handleSubmit(({ amount, categoryId, date, comment }) =>

@@ -12,7 +12,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import TextField from '@mui/material/TextField'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import {
   CategoryAvatar,
   categoryColors,
@@ -53,7 +53,7 @@ const typeChangeMessage = (detail: string) =>
 
 function CategoryForm({ category, onDone }: CategoryFormProps) {
   const queryClient = useQueryClient()
-  const { control, handleSubmit, watch, setError } = useForm<CategoryFormValues, unknown, CategoryInput>({
+  const { control, handleSubmit, setError } = useForm<CategoryFormValues, unknown, CategoryInput>({
     resolver: zodResolver(categoryFormSchema),
     defaultValues: {
       name: category?.name ?? '',
@@ -83,7 +83,7 @@ function CategoryForm({ category, onDone }: CategoryFormProps) {
       : errorMessage(save.error)
     : null
 
-  const color = watch('color')
+  const color = useWatch({ control, name: 'color' })
 
   return (
     <Box component="form" noValidate onSubmit={handleSubmit((data) => save.mutate(data))}>
