@@ -1,18 +1,33 @@
-import type { FormEvent } from 'react'
 import Button from '@mui/material/Button'
 import Link from '@mui/material/Link'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Controller, useForm } from 'react-hook-form'
 import { Link as RouterLink, useNavigate } from 'react-router'
+import { z } from 'zod'
 import { AuthCard } from '@/shared/ui'
+
+const registerSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Введите имя').max(50, 'Не больше 50 символов'),
+    email: z.string().trim().min(1, 'Введите email').pipe(z.email('Неверный формат email')),
+    password: z.string().min(8, 'Не менее 8 символов'),
+    confirm: z.string().min(1, 'Повторите пароль'),
+  })
+  .refine((values) => values.password === values.confirm, {
+    path: ['confirm'],
+    error: 'Пароли не совпадают',
+  })
+
+type RegisterValues = z.infer<typeof registerSchema>
 
 export function RegisterPage() {
   const navigate = useNavigate()
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault()
-    navigate('/')
-  }
+  const { control, handleSubmit } = useForm<RegisterValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { name: '', email: '', password: '', confirm: '' },
+  })
 
   return (
     <AuthCard
@@ -27,11 +42,70 @@ export function RegisterPage() {
         </>
       }
     >
-      <Stack component="form" spacing={2} onSubmit={submit}>
-        <TextField label="Имя" autoComplete="name" required fullWidth />
-        <TextField label="Email" type="email" autoComplete="email" required fullWidth />
-        <TextField label="Пароль" type="password" autoComplete="new-password" helperText="Не менее 8 символов" required fullWidth />
-        <TextField label="Повторите пароль" type="password" autoComplete="new-password" required fullWidth />
+      <Stack component="form" spacing={2} noValidate onSubmit={handleSubmit(() => navigate('/'))}>
+        <Controller
+          control={control}
+          name="name"
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              label="Имя"
+              autoComplete="name"
+              required
+              fullWidth
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="email"
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              label="Email"
+              type="email"
+              autoComplete="email"
+              required
+              fullWidth
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="password"
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              label="Пароль"
+              type="password"
+              autoComplete="new-password"
+              required
+              fullWidth
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message ?? 'Не менее 8 символов'}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="confirm"
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              label="Повторите пароль"
+              type="password"
+              autoComplete="new-password"
+              required
+              fullWidth
+              error={!!fieldState.error}
+              helperText={fieldState.error?.message}
+            />
+          )}
+        />
         <Button type="submit" variant="contained" size="large" fullWidth>
           Создать аккаунт
         </Button>
