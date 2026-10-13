@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
 
+    jwt_secret: SecretStr
+    jwt_algorithm: str = "HS256"
+    access_token_ttl_minutes: int = 15
+    refresh_token_ttl_days: int = 30
+    refresh_cookie_secure: bool = False
+
     @property
     def database_url(self) -> URL:
         return URL.create(

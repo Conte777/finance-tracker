@@ -1,13 +1,14 @@
 from fastapi import FastAPI
 from sqlalchemy import text
 
-from app.api import budgets, categories, transactions
+from app.api import auth, budgets, categories, transactions
 from app.db import SessionDep
 from app.errors import register_error_handlers
 
 app = FastAPI(title="Finance API", version="0.1.0")
 register_error_handlers(app)
 
+app.include_router(auth.router)
 app.include_router(categories.router)
 app.include_router(transactions.router)
 app.include_router(budgets.router)
