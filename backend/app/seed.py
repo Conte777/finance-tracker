@@ -6,7 +6,13 @@ from decimal import Decimal
 from sqlalchemy import text
 
 from app.db import SessionLocal, engine
-from app.models import Budget, Category, CategoryType, Transaction
+from app.models import Budget, Category, CategoryType, Transaction, User
+from app.security import hash_password
+
+USERS = [
+    ("demo@example.com", "Алексей К.", "demo12345", None),
+    ("maria@example.com", "Мария С.", "maria12345", {"salary", "groceries", "cafe", "transport"}),
+]
 
 INCOME = CategoryType.INCOME
 EXPENSE = CategoryType.EXPENSE
@@ -73,7 +79,9 @@ def vary(amount: int, seed: int) -> int:
 def build_transactions(categories: dict[str, Category]) -> list[Transaction]:
     result = []
     for month_index, (year, month) in enumerate(MONTHS):
-        templates = [t for t in TEMPLATES if t[4] is None or month_index in t[4]]
+        templates = [
+            t for t in TEMPLATES if t[0] in categories and (t[4] is None or month_index in t[4])
+        ]
         for template_index, (key, day, amount, comment, _) in enumerate(templates):
             date = dt.date(year, month, day)
             if date > LAST_DATE:
@@ -96,28 +104,41 @@ def build_transactions(categories: dict[str, Category]) -> list[Transaction]:
 async def seed() -> None:
     async with SessionLocal() as session:
         await session.execute(
-            text("TRUNCATE transactions, budgets, categories RESTART IDENTITY CASCADE")
+            text(
+                "TRUNCATE transactions, budgets, categories, refresh_sessions, users "
+                "RESTART IDENTITY CASCADE"
+            )
         )
 
-        categories = {
-            key: Category(name=name, type=type_, color=color, icon=icon)
-            for key, name, type_, color, icon in CATEGORIES
-        }
-        session.add_all(categories.values())
-        await session.flush()
-        session.add_all(
-            Budget(category_id=categories[key].id, limit=Decimal(limit))
-            for key, limit in BUDGETS.items()
-        )
-        transactions = build_transactions(categories)
-        session.add_all(transactions)
+        summary = []
+        for email, name, password, keys in USERS:
+            user = User(email=email, name=name, password_hash=hash_password(password))
+            session.add(user)
+            await session.flush()
+
+            categories = {
+                key: Category(user_id=user.id, name=cname, type=type_, color=color, icon=icon)
+                for key, cname, type_, color, icon in CATEGORIES
+                if keys is None or key in keys
+            }
+            session.add_all(categories.values())
+            await session.flush()
+            budgets = [
+                Budget(category_id=categories[key].id, limit=Decimal(limit))
+                for key, limit in BUDGETS.items()
+                if key in categories
+            ]
+            session.add_all(budgets)
+            transactions = build_transactions(categories)
+            session.add_all(transactions)
+            summary.append(
+                f"{email} / {password}: {len(categories)} categories, "
+                f"{len(budgets)} budgets, {len(transactions)} transactions"
+            )
         await session.commit()
 
     await engine.dispose()
-    print(
-        f"Seeded {len(categories)} categories, {len(BUDGETS)} budgets, "
-        f"{len(transactions)} transactions"
-    )
+    print("Seeded users:", *summary, sep="\n  ")
 
 
 if __name__ == "__main__":
