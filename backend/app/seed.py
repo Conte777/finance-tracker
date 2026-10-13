@@ -44,8 +44,13 @@ BUDGETS = {
     "clothes": 6000,
 }
 
-MONTHS = [(2026, m) for m in range(4, 10)]
-LAST_DATE = dt.date(2026, 9, 20)
+MONTH_COUNT = 6
+
+
+def recent_months(today: dt.date) -> list[tuple[int, int]]:
+    index = today.year * 12 + today.month - 1
+    return [(i // 12, i % 12 + 1) for i in range(index - MONTH_COUNT + 1, index + 1)]
+
 
 TEMPLATES = [
     ("salary", 5, 95000, "Зарплата, аванс и расчёт", None),
@@ -76,15 +81,15 @@ def vary(amount: int, seed: int) -> int:
     return math.floor(amount * factor / 10 + 0.5) * 10
 
 
-def build_transactions(categories: dict[str, Category]) -> list[Transaction]:
+def build_transactions(categories: dict[str, Category], today: dt.date) -> list[Transaction]:
     result = []
-    for month_index, (year, month) in enumerate(MONTHS):
+    for month_index, (year, month) in enumerate(recent_months(today)):
         templates = [
             t for t in TEMPLATES if t[0] in categories and (t[4] is None or month_index in t[4])
         ]
         for template_index, (key, day, amount, comment, _) in enumerate(templates):
             date = dt.date(year, month, day)
-            if date > LAST_DATE:
+            if date > today:
                 continue
             if key == "salary":
                 value = amount + (7000 if month_index >= 3 else 0)
@@ -129,7 +134,7 @@ async def seed() -> None:
                 if key in categories
             ]
             session.add_all(budgets)
-            transactions = build_transactions(categories)
+            transactions = build_transactions(categories, dt.date.today())
             session.add_all(transactions)
             summary.append(
                 f"{email} / {password}: {len(categories)} categories, "
