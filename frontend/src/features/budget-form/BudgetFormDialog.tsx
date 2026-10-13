@@ -11,8 +11,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { budgetKeys, budgetsQuery, createBudget, updateBudget, type Budget, type BudgetInput } from '@/entities/budget'
-import { categoriesQuery } from '@/entities/category'
-import { ApiError, errorMessage } from '@/shared/api'
+import { categoriesQuery, categoryKeys } from '@/entities/category'
+import { errorMessage } from '@/shared/api'
+import { applyServerFieldErrors, isApiStatus } from '@/shared/lib/form'
 import { FormDialog } from '@/shared/ui'
 import { budgetFormSchema, type BudgetFormResult, type BudgetFormValues } from './schema'
 
@@ -29,6 +30,8 @@ export function BudgetFormDialog({ open, budget, onClose }: BudgetFormDialogProp
     </FormDialog>
   )
 }
+
+const serverFields = ['categoryId', 'limit'] as const
 
 type BudgetFormProps = {
   budget: Budget | null
@@ -54,10 +57,15 @@ function BudgetForm({ budget, onDone }: BudgetFormProps) {
       onDone()
     },
     onError: (error) => {
-      if (error instanceof ApiError && error.status === 409) {
+      if (applyServerFieldErrors(error, serverFields, setError)) return
+      if (isApiStatus(error, 409)) {
         setError('categoryId', { message: 'У этой категории уже есть бюджет' })
-      } else if (error instanceof ApiError && error.status === 422) {
-        setError('categoryId', { message: 'Бюджет можно задать только для расходной категории' })
+        void queryClient.invalidateQueries({ queryKey: budgetKeys.all })
+      } else if (isApiStatus(error, 422)) {
+        setError('categoryId', { message: 'Бюджет можно задать только для существующей расходной категории' })
+        void queryClient.invalidateQueries({ queryKey: categoryKeys.all })
+      } else if (isApiStatus(error, 404)) {
+        void queryClient.invalidateQueries({ queryKey: budgetKeys.all })
       }
     },
   })
@@ -67,7 +75,8 @@ function BudgetForm({ budget, onDone }: BudgetFormProps) {
   const options = categories.filter(
     (c) => String(c.id) === selectedId || (c.type === 'expense' && !budgeted.has(c.id)),
   )
-  const fieldError = save.error instanceof ApiError && (save.error.status === 409 || save.error.status === 422)
+  const fieldError = isApiStatus(save.error, 409) || isApiStatus(save.error, 422)
+  const hasExpenseCategories = categories.some((c) => c.type === 'expense')
 
   return (
     <Box component="form" noValidate onSubmit={handleSubmit((data) => save.mutate(data))}>
@@ -87,7 +96,11 @@ function BudgetForm({ budget, onDone }: BudgetFormProps) {
                 error={!!fieldState.error}
                 helperText={
                   fieldState.error?.message ??
-                  (!budget && options.length === 0 ? 'У всех расходных категорий уже есть бюджет' : undefined)
+                  (budget || options.length > 0
+                    ? undefined
+                    : hasExpenseCategories
+                      ? 'У всех расходных категорий уже есть бюджет'
+                      : 'Расходных категорий нет. Сначала создайте категорию.')
                 }
               >
                 {options.map((c) => (

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { deleteTransaction, transactionKeys, type Transaction } from '@/entities/transaction'
 import { errorMessage } from '@/shared/api'
 import { formatShortDate, formatSignedRub } from '@/shared/lib/format'
+import { isApiStatus } from '@/shared/lib/form'
 import { ConfirmDialog } from '@/shared/ui'
 
 type DeleteTransactionDialogProps = {
@@ -17,6 +18,9 @@ export function DeleteTransactionDialog({ open, transaction, onClose }: DeleteTr
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: transactionKeys.all })
       onClose()
+    },
+    onError: (error) => {
+      if (isApiStatus(error, 404)) void queryClient.invalidateQueries({ queryKey: transactionKeys.all })
     },
   })
 

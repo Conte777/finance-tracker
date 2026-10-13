@@ -24,6 +24,7 @@ import {
   type CategoryInput,
 } from '@/entities/category'
 import { ApiError, errorMessage } from '@/shared/api'
+import { applyServerFieldErrors, isApiStatus } from '@/shared/lib/form'
 import { FormDialog } from '@/shared/ui'
 import { categoryFormSchema, type CategoryFormValues } from './schema'
 
@@ -40,6 +41,8 @@ export function CategoryFormDialog({ open, category, onClose }: CategoryFormDial
     </FormDialog>
   )
 }
+
+const serverFields = ['name', 'type', 'color', 'icon'] as const
 
 type CategoryFormProps = {
   category: Category | null
@@ -70,14 +73,17 @@ function CategoryForm({ category, onDone }: CategoryFormProps) {
       onDone()
     },
     onError: (error) => {
+      if (applyServerFieldErrors(error, serverFields, setError)) return
       if (error instanceof ApiError && error.status === 409 && error.detail.includes('already exists')) {
         setError('name', { message: 'Категория с таким названием уже есть' })
+      } else if (isApiStatus(error, 404)) {
+        void queryClient.invalidateQueries({ queryKey: categoryKeys.all })
       }
     },
   })
 
   const nameTaken = save.error instanceof ApiError && save.error.status === 409 && save.error.detail.includes('already exists')
-  const formError = save.isError && !nameTaken
+  const formError = save.isError && !nameTaken && !isApiStatus(save.error, 422)
     ? save.error instanceof ApiError && save.error.status === 409
       ? typeChangeMessage(save.error.detail)
       : errorMessage(save.error)

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { budgetKeys, deleteBudget, type Budget } from '@/entities/budget'
 import { errorMessage } from '@/shared/api'
+import { isApiStatus } from '@/shared/lib/form'
 import { ConfirmDialog } from '@/shared/ui'
 
 type DeleteBudgetDialogProps = {
@@ -17,6 +18,9 @@ export function DeleteBudgetDialog({ open, budget, categoryName, onClose }: Dele
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: budgetKeys.all })
       onClose()
+    },
+    onError: (error) => {
+      if (isApiStatus(error, 404)) void queryClient.invalidateQueries({ queryKey: budgetKeys.all })
     },
   })
 

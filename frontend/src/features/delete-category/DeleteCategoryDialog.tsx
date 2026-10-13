@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { budgetKeys } from '@/entities/budget'
 import { categoryKeys, deleteCategory, type Category } from '@/entities/category'
 import { ApiError, errorMessage } from '@/shared/api'
+import { isApiStatus } from '@/shared/lib/form'
 import { ConfirmDialog } from '@/shared/ui'
 
 type DeleteCategoryDialogProps = {
@@ -25,6 +26,9 @@ export function DeleteCategoryDialog({ open, category, onClose }: DeleteCategory
         queryClient.invalidateQueries({ queryKey: budgetKeys.all }),
       ])
       onClose()
+    },
+    onError: (error) => {
+      if (isApiStatus(error, 404)) void queryClient.invalidateQueries({ queryKey: categoryKeys.all })
     },
   })
 
