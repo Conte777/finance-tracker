@@ -156,10 +156,12 @@ backend/
 │   ├── config.py      настройки из переменных окружения (.env)
 │   ├── db.py          движок, фабрика сессий, зависимость SessionDep
 │   ├── errors.py      доменные ошибки → HTTP-статусы
+│   ├── security.py    хеширование паролей, выпуск и проверка JWT, хеш refresh token
 │   ├── models/        модели SQLAlchemy (таблицы)
 │   ├── schemas/       схемы Pydantic: валидация запросов и ответов
 │   ├── services/      операции с данными и бизнес-правила
 │   ├── api/           маршруты API, по роутеру на сущность
+│   │   └── deps.py    зависимость CurrentUser: пользователь по access token
 │   └── seed.py        заполнение БД демонстрационными данными
 ├── migrations/        миграции Alembic
 └── docker-compose.yml PostgreSQL для локальной разработки
