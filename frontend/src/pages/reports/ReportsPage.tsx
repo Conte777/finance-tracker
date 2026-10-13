@@ -6,6 +6,7 @@ import Grid from '@mui/material/Grid'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
 import { BarChart } from '@mui/x-charts/BarChart'
 import { PieChart } from '@mui/x-charts/PieChart'
 import { useQuery } from '@tanstack/react-query'
@@ -53,7 +54,11 @@ export function ReportsPage() {
         }
       />
 
-      <QueryState queries={[categories, transactions]}>
+      <QueryState
+        queries={[categories, transactions]}
+        empty={transactions.data?.length === 0}
+        emptyText="Операций пока нет. Отчёты появятся после первой операции."
+      >
         {categories.data && transactions.data && (
           <ReportsContent categories={categories.data} transactions={transactions.data} months={months} month={month} />
         )}
@@ -89,19 +94,23 @@ function ReportsContent({ categories, transactions, months, month }: ReportsCont
         <Card sx={{ height: '100%' }}>
           <CardHeader title="Расходы по категориям" subheader={formatMonthYear(month)} />
           <CardContent>
-            <PieChart
-              height={300}
-              series={[
-                {
-                  data: expensesByCategory,
-                  innerRadius: 60,
-                  paddingAngle: 1,
-                  cornerRadius: 4,
-                  valueFormatter: (item) => formatRub(item.value),
-                },
-              ]}
-              slotProps={{ legend: { direction: 'vertical', position: { vertical: 'middle', horizontal: 'end' } } }}
-            />
+            {expensesByCategory.length === 0 ? (
+              <Typography sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>В этом месяце расходов нет</Typography>
+            ) : (
+              <PieChart
+                height={300}
+                series={[
+                  {
+                    data: expensesByCategory,
+                    innerRadius: 60,
+                    paddingAngle: 1,
+                    cornerRadius: 4,
+                    valueFormatter: (item) => formatRub(item.value),
+                  },
+                ]}
+                slotProps={{ legend: { direction: 'vertical', position: { vertical: 'middle', horizontal: 'end' } } }}
+              />
+            )}
           </CardContent>
         </Card>
       </Grid>
