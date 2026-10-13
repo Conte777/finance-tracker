@@ -1,10 +1,9 @@
 export type { Transaction, TransactionFilter, TransactionInput, TransactionPage, TransactionType } from './model'
-export { CURRENT_MONTH, isInMonth, monthRange, sumAmount, sumByCategory } from './model'
+export { currentMonth, isInMonth, monthRange, sumAmount, sumByCategory, today } from './model'
 export {
-  ALL_TRANSACTIONS,
+  allTransactionsQuery,
   createTransaction,
   deleteTransaction,
-  getTransaction,
   transactionKeys,
   transactionsQuery,
   updateTransaction,

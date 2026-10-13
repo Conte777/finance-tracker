@@ -18,12 +18,11 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { CategoryAvatar, categoriesQuery, indexCategories, type Category } from '@/entities/category'
 import {
-  ALL_TRANSACTIONS,
-  CURRENT_MONTH,
+  allTransactionsQuery,
+  currentMonth,
   isInMonth,
   sumAmount,
   sumByCategory,
-  transactionsQuery,
   type Transaction,
 } from '@/entities/transaction'
 import { formatDate, formatMonthYear, formatRub, formatSignedRub } from '@/shared/lib/format'
@@ -32,14 +31,15 @@ import { PageHeader, QueryState, StatCard } from '@/shared/ui'
 
 export function DashboardPage() {
   const categories = useQuery(categoriesQuery())
-  const transactions = useQuery(transactionsQuery({ size: ALL_TRANSACTIONS }))
+  const transactions = useQuery(allTransactionsQuery())
+  const month = currentMonth()
 
   return (
     <>
-      <PageHeader title="Обзор" subtitle={formatMonthYear(CURRENT_MONTH)} />
+      <PageHeader title="Обзор" subtitle={formatMonthYear(month)} />
       <QueryState queries={[categories, transactions]}>
         {categories.data && transactions.data && (
-          <DashboardContent categories={categories.data} transactions={transactions.data.items} />
+          <DashboardContent categories={categories.data} transactions={transactions.data} month={month} />
         )}
       </QueryState>
     </>
@@ -49,11 +49,12 @@ export function DashboardPage() {
 type DashboardContentProps = {
   categories: Category[]
   transactions: Transaction[]
+  month: string
 }
 
-function DashboardContent({ categories, transactions }: DashboardContentProps) {
+function DashboardContent({ categories, transactions, month }: DashboardContentProps) {
   const categoryById = indexCategories(categories)
-  const monthTransactions = transactions.filter((t) => isInMonth(t, CURRENT_MONTH))
+  const monthTransactions = transactions.filter((t) => isInMonth(t, month))
   const balance = sumAmount(transactions, 'income') - sumAmount(transactions, 'expense')
   const income = sumAmount(monthTransactions, 'income')
   const expense = sumAmount(monthTransactions, 'expense')

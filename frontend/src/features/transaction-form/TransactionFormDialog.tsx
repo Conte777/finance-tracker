@@ -12,17 +12,19 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Controller, useForm, useWatch } from 'react-hook-form'
-import { categoriesQuery } from '@/entities/category'
+import { categoriesQuery, categoryKeys } from '@/entities/category'
 import {
   createTransaction,
+  today,
   transactionKeys,
   updateTransaction,
   type Transaction,
   type TransactionInput,
 } from '@/entities/transaction'
-import { ApiError, errorMessage } from '@/shared/api'
+import { errorMessage } from '@/shared/api'
+import { applyServerFieldErrors, isApiStatus } from '@/shared/lib/form'
 import { FormDialog } from '@/shared/ui'
-import { DEFAULT_DATE, transactionFormSchema, type TransactionFormResult, type TransactionFormValues } from './schema'
+import { transactionFormSchema, type TransactionFormResult, type TransactionFormValues } from './schema'
 
 type TransactionFormDialogProps = {
   open: boolean
@@ -38,6 +40,8 @@ export function TransactionFormDialog({ open, transaction, onClose }: Transactio
   )
 }
 
+const serverFields = ['amount', 'categoryId', 'date', 'comment'] as const
+
 type TransactionFormProps = {
   transaction: Transaction | null
   onDone: () => void
@@ -52,7 +56,7 @@ function TransactionForm({ transaction, onDone }: TransactionFormProps) {
       type: transaction?.type ?? 'expense',
       amount: transaction ? String(transaction.amount) : '',
       categoryId: transaction ? String(transaction.categoryId) : '',
-      date: transaction?.date ?? DEFAULT_DATE,
+      date: transaction?.date ?? today(),
       comment: transaction?.comment ?? '',
     },
   })
@@ -65,8 +69,12 @@ function TransactionForm({ transaction, onDone }: TransactionFormProps) {
       onDone()
     },
     onError: (error) => {
-      if (error instanceof ApiError && error.status === 422) {
+      if (applyServerFieldErrors(error, serverFields, setError)) return
+      if (isApiStatus(error, 422)) {
         setError('categoryId', { message: 'Категория не найдена, выберите другую' })
+        void queryClient.invalidateQueries({ queryKey: categoryKeys.all })
+      } else if (isApiStatus(error, 404)) {
+        void queryClient.invalidateQueries({ queryKey: transactionKeys.all })
       }
     },
   })
@@ -82,7 +90,7 @@ function TransactionForm({ transaction, onDone }: TransactionFormProps) {
     <Box component="form" noValidate onSubmit={submit}>
       <DialogContent>
         <Stack spacing={2.5} sx={{ pt: 1 }}>
-          {save.isError && !(save.error instanceof ApiError && save.error.status === 422) && (
+          {save.isError && !isApiStatus(save.error, 422) && (
             <Alert severity="error">{errorMessage(save.error)}</Alert>
           )}
           <Controller
@@ -133,7 +141,10 @@ function TransactionForm({ transaction, onDone }: TransactionFormProps) {
                 label="Категория"
                 required
                 error={!!fieldState.error}
-                helperText={fieldState.error?.message}
+                helperText={
+                  fieldState.error?.message ??
+                  (categories.length === 0 ? 'Категорий этого типа нет. Сначала создайте категорию.' : undefined)
+                }
               >
                 {categories.map((c) => (
                   <MenuItem key={c.id} value={String(c.id)}>

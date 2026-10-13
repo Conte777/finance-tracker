@@ -1,31 +1,36 @@
-const DELAY_MS = 400
+export type FieldErrors = Record<string, string>
 
 export class ApiError extends Error {
   status: number
   detail: string
+  fields: FieldErrors
 
-  constructor(status: number, detail: string) {
+  constructor(status: number, detail: string, fields: FieldErrors = {}) {
     super(detail)
     this.name = 'ApiError'
     this.status = status
     this.detail = detail
+    this.fields = fields
   }
 }
 
-const failingResource = () =>
-  import.meta.env.DEV ? new URLSearchParams(window.location.search).get('fail') : null
-
-export async function respond<T>(resource: string, handler: () => T): Promise<T> {
-  await new Promise((resolve) => setTimeout(resolve, DELAY_MS))
-  if (failingResource() === resource) {
-    throw new ApiError(500, 'Internal Server Error')
-  }
-  return structuredClone(handler())
+const statusMessages: Record<number, string> = {
+  401: 'Сессия истекла. Войдите снова.',
+  403: 'Недостаточно прав для этого действия.',
+  404: 'Запись не найдена: возможно, она уже удалена. Обновите страницу.',
+  409: 'Действие конфликтует с существующими данными.',
+  422: 'Проверьте введённые данные.',
 }
 
-export const nextId = (rows: { id: number }[]) => rows.reduce((max, row) => Math.max(max, row.id), 0) + 1
+export const errorMessage = (error: unknown) =>
+  (error instanceof ApiError && statusMessages[error.status]) ||
+  'Не удалось связаться с сервером. Попробуйте ещё раз.'
 
-export const errorMessage = (error: unknown) => {
-  if (error instanceof ApiError && error.status < 500) return error.detail
-  return 'Не удалось связаться с сервером. Попробуйте ещё раз.'
+export const queryString = (params: Record<string, string | number | undefined>) => {
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) search.set(key, String(value))
+  }
+  const result = search.toString()
+  return result ? `?${result}` : ''
 }

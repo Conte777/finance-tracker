@@ -1,8 +1,6 @@
 import { z } from 'zod'
 import { moneySchema } from '@/shared/lib/money'
 
-export const DEFAULT_DATE = '2026-09-21'
-
 export const transactionFormSchema = z.object({
   type: z.enum(['income', 'expense']),
   amount: moneySchema({ required: 'Введите сумму', positive: 'Сумма должна быть больше нуля' }),

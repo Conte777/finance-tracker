@@ -1,4 +1,4 @@
-import { ApiError } from './request'
+import { ApiError, type FieldErrors } from './request'
 
 const BASE_URL = '/api'
 
@@ -12,8 +12,15 @@ type TokenResponse = {
   access_token: string
 }
 
+type ValidationIssue = {
+  type: string
+  loc: (string | number)[]
+  msg: string
+  ctx?: Record<string, unknown>
+}
+
 type ErrorBody = {
-  detail?: string | { msg: string }[]
+  detail?: string | ValidationIssue[]
 }
 
 let accessToken: string | null = null
@@ -33,10 +40,39 @@ const send = (path: string, { method = 'GET', body }: RequestOptions, token: str
     body: body === undefined ? undefined : JSON.stringify(body),
   })
 
+const toCamelCase = (name: string) => name.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase())
+
+const issueMessage = ({ type, ctx }: ValidationIssue) => {
+  switch (type) {
+    case 'missing':
+    case 'string_too_short':
+      return 'Заполните поле'
+    case 'string_too_long':
+      return `Не больше ${String(ctx?.max_length)} символов`
+    case 'greater_than':
+      return `Значение должно быть больше ${String(ctx?.gt)}`
+    case 'decimal_max_places':
+      return 'Не больше двух знаков после запятой'
+    case 'decimal_max_digits':
+      return 'Слишком большое число'
+    default:
+      return 'Некорректное значение'
+  }
+}
+
+const toFieldErrors = (issues: ValidationIssue[]): FieldErrors =>
+  Object.fromEntries(
+    issues
+      .filter(({ loc }) => loc.length > 1)
+      .map((issue) => [toCamelCase(String(issue.loc[issue.loc.length - 1])), issueMessage(issue)]),
+  )
+
 const toApiError = async (response: Response) => {
-  const { detail } = ((await response.json().catch(() => ({}))) as ErrorBody)
-  const message = Array.isArray(detail) ? detail.map((item) => item.msg).join('; ') : detail
-  return new ApiError(response.status, message ?? response.statusText)
+  const { detail } = (await response.json().catch(() => ({}))) as ErrorBody
+  if (Array.isArray(detail)) {
+    return new ApiError(response.status, detail.map((item) => item.msg).join('; '), toFieldErrors(detail))
+  }
+  return new ApiError(response.status, detail ?? response.statusText)
 }
 
 const refresh = async () => {

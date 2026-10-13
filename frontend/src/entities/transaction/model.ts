@@ -28,12 +28,19 @@ export type TransactionPage = {
   total: number
 }
 
-export const CURRENT_MONTH = '2026-09'
+const pad = (value: number) => String(value).padStart(2, '0')
+
+export const today = () => {
+  const now = new Date()
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
+export const currentMonth = () => today().slice(0, 7)
 
 export const monthRange = (month: string) => {
   const [year, monthIndex] = month.split('-').map(Number)
   const lastDay = new Date(year, monthIndex, 0).getDate()
-  return { dateFrom: `${month}-01`, dateTo: `${month}-${String(lastDay).padStart(2, '0')}` }
+  return { dateFrom: `${month}-01`, dateTo: `${month}-${pad(lastDay)}` }
 }
 
 export const isInMonth = (transaction: Transaction, month: string) =>

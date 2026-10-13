@@ -15,12 +15,11 @@ import { PieChart } from '@mui/x-charts/PieChart'
 import { useQuery } from '@tanstack/react-query'
 import { categoriesQuery, indexCategories, type Category } from '@/entities/category'
 import {
-  ALL_TRANSACTIONS,
-  CURRENT_MONTH,
+  allTransactionsQuery,
+  currentMonth,
   isInMonth,
   sumAmount,
   sumByCategory,
-  transactionsQuery,
   type Transaction,
 } from '@/entities/transaction'
 import { formatMonth, formatMonthYear, formatRub } from '@/shared/lib/format'
@@ -30,12 +29,12 @@ const rubFormatter = (value: number | null) => (value === null ? '' : formatRub(
 
 export function ReportsPage() {
   const categories = useQuery(categoriesQuery())
-  const transactions = useQuery(transactionsQuery({ size: ALL_TRANSACTIONS }))
+  const transactions = useQuery(allTransactionsQuery())
   const [selectedMonth, setMonth] = useState<string | null>(null)
   const [exportNotice, setExportNotice] = useState(false)
 
   const months = [
-    ...new Set([CURRENT_MONTH, ...(transactions.data?.items ?? []).map((t) => t.date.slice(0, 7))]),
+    ...new Set([currentMonth(), ...(transactions.data ?? []).map((t) => t.date.slice(0, 7))]),
   ].sort()
   const month = selectedMonth ?? months[months.length - 1]
 
@@ -62,7 +61,7 @@ export function ReportsPage() {
 
       <QueryState queries={[categories, transactions]}>
         {categories.data && transactions.data && (
-          <ReportsContent categories={categories.data} transactions={transactions.data.items} months={months} month={month} />
+          <ReportsContent categories={categories.data} transactions={transactions.data} months={months} month={month} />
         )}
       </QueryState>
 

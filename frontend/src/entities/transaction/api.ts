@@ -1,83 +1,60 @@
 import { queryOptions } from '@tanstack/react-query'
-import { findCategory } from '@/entities/category/api'
-import { ApiError, nextId, respond } from '@/shared/api'
-import { mockTransactions } from './mock'
+import { apiRequest, queryString } from '@/shared/api'
 import type { Transaction, TransactionFilter, TransactionInput, TransactionPage } from './model'
 
-type TransactionRow = TransactionInput & { id: number }
-
-const rows: TransactionRow[] = mockTransactions.map((t) => ({ ...t }))
-
-const RESOURCE = 'transactions'
-
-export const countTransactions = (categoryId: number) => rows.filter((t) => t.categoryId === categoryId).length
-
-const existingCategory = (categoryId: number) => {
-  const category = findCategory(categoryId)
-  if (!category) throw new ApiError(422, `Category ${categoryId} does not exist`)
-  return category
+type TransactionDto = Omit<Transaction, 'categoryId'> & {
+  category_id: number
 }
 
-const toTransaction = (row: TransactionRow): Transaction => ({ ...row, type: existingCategory(row.categoryId).type })
-
-const getRow = (id: number) => {
-  const row = rows.find((t) => t.id === id)
-  if (!row) throw new ApiError(404, `Transaction ${id} not found`)
-  return row
+type TransactionPageDto = {
+  items: TransactionDto[]
+  total: number
 }
 
-export const listTransactions = ({ type, categoryId, q, dateFrom, dateTo, page = 1, size = 20 }: TransactionFilter = {}) =>
-  respond(RESOURCE, (): TransactionPage => {
-    const query = q?.toLowerCase()
-    const filtered = rows
-      .map(toTransaction)
-      .filter(
-        (t) =>
-          (!type || t.type === type) &&
-          (!categoryId || t.categoryId === categoryId) &&
-          (!query || t.comment.toLowerCase().includes(query)) &&
-          (!dateFrom || t.date >= dateFrom) &&
-          (!dateTo || t.date <= dateTo),
-      )
-      .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
-    return { items: filtered.slice((page - 1) * size, page * size), total: filtered.length }
-  })
+const MAX_PAGE_SIZE = 100
 
-export const getTransaction = (id: number) => respond(RESOURCE, () => toTransaction(getRow(id)))
+const toTransaction = ({ category_id, ...rest }: TransactionDto): Transaction => ({ ...rest, categoryId: category_id })
 
-export const createTransaction = (data: TransactionInput) =>
-  respond(RESOURCE, () => {
-    existingCategory(data.categoryId)
-    const row: TransactionRow = { ...data, id: nextId(rows) }
-    rows.push(row)
-    return toTransaction(row)
-  })
+const toBody = (data: Partial<TransactionInput>) => ({
+  category_id: data.categoryId,
+  amount: data.amount,
+  date: data.date,
+  comment: data.comment,
+})
 
-export const updateTransaction = (id: number, data: Partial<TransactionInput>) =>
-  respond(RESOURCE, () => {
-    const row = getRow(id)
-    if (data.categoryId !== undefined) existingCategory(data.categoryId)
-    Object.assign(row, {
-      categoryId: data.categoryId ?? row.categoryId,
-      amount: data.amount ?? row.amount,
-      date: data.date ?? row.date,
-      comment: data.comment ?? row.comment,
-    })
-    return toTransaction(row)
-  })
+export const listTransactions = async ({ type, categoryId, q, dateFrom, dateTo, page, size }: TransactionFilter = {}) => {
+  const path = `/transactions${queryString({ type, category_id: categoryId, q, date_from: dateFrom, date_to: dateTo, page, size })}`
+  const { items, total } = await apiRequest<TransactionPageDto>(path)
+  return { items: items.map(toTransaction), total } satisfies TransactionPage
+}
 
-export const deleteTransaction = (id: number) =>
-  respond(RESOURCE, () => {
-    getRow(id)
-    rows.splice(rows.findIndex((t) => t.id === id), 1)
-  })
+export const listAllTransactions = async (filter: Omit<TransactionFilter, 'page' | 'size'> = {}) => {
+  const first = await listTransactions({ ...filter, page: 1, size: MAX_PAGE_SIZE })
+  const pageCount = Math.ceil(first.total / MAX_PAGE_SIZE)
+  const rest = await Promise.all(
+    Array.from({ length: pageCount - 1 }, (_, index) =>
+      listTransactions({ ...filter, page: index + 2, size: MAX_PAGE_SIZE }),
+    ),
+  )
+  return [first, ...rest].flatMap((page) => page.items)
+}
 
-export const ALL_TRANSACTIONS = 1000
+export const createTransaction = async (data: TransactionInput) =>
+  toTransaction(await apiRequest<TransactionDto>('/transactions', { method: 'POST', body: toBody(data) }))
+
+export const updateTransaction = async (id: number, data: Partial<TransactionInput>) =>
+  toTransaction(await apiRequest<TransactionDto>(`/transactions/${id}`, { method: 'PATCH', body: toBody(data) }))
+
+export const deleteTransaction = (id: number) => apiRequest<void>(`/transactions/${id}`, { method: 'DELETE' })
 
 export const transactionKeys = {
-  all: [RESOURCE] as const,
-  list: (filter: TransactionFilter) => [RESOURCE, filter] as const,
+  all: ['transactions'] as const,
+  list: (filter: TransactionFilter) => [...transactionKeys.all, 'list', filter] as const,
+  everything: (filter: Omit<TransactionFilter, 'page' | 'size'>) => [...transactionKeys.all, 'all', filter] as const,
 }
 
 export const transactionsQuery = (filter: TransactionFilter) =>
   queryOptions({ queryKey: transactionKeys.list(filter), queryFn: () => listTransactions(filter) })
+
+export const allTransactionsQuery = (filter: Omit<TransactionFilter, 'page' | 'size'> = {}) =>
+  queryOptions({ queryKey: transactionKeys.everything(filter), queryFn: () => listAllTransactions(filter) })

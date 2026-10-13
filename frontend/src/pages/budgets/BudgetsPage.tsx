@@ -23,11 +23,10 @@ import { DeleteBudgetDialog } from '@/features/delete-budget'
 import { budgetsQuery, type Budget } from '@/entities/budget'
 import { CategoryAvatar, categoriesQuery, indexCategories, type Category } from '@/entities/category'
 import {
-  ALL_TRANSACTIONS,
-  CURRENT_MONTH,
+  allTransactionsQuery,
+  currentMonth,
   monthRange,
   sumByCategory,
-  transactionsQuery,
   type Transaction,
 } from '@/entities/transaction'
 import { formatMonthYear, formatRub } from '@/shared/lib/format'
@@ -46,9 +45,8 @@ export function BudgetsPage() {
   const [editing, setEditing] = useState<Budget | null>(null)
   const budgets = useQuery(budgetsQuery())
   const categories = useQuery(categoriesQuery())
-  const transactions = useQuery(
-    transactionsQuery({ type: 'expense', ...monthRange(CURRENT_MONTH), size: ALL_TRANSACTIONS }),
-  )
+  const month = currentMonth()
+  const transactions = useQuery(allTransactionsQuery({ type: 'expense', ...monthRange(month) }))
 
   const openForm = (budget: Budget | null) => {
     setEditing(budget)
@@ -59,7 +57,7 @@ export function BudgetsPage() {
     <>
       <PageHeader
         title="Бюджеты"
-        subtitle={`Лимиты расходов на ${formatMonthYear(CURRENT_MONTH).toLowerCase()}`}
+        subtitle={`Лимиты расходов на ${formatMonthYear(month).toLowerCase()}`}
         action={
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => openForm(null)}>
             Добавить бюджет
@@ -75,7 +73,7 @@ export function BudgetsPage() {
           <BudgetsContent
             budgets={budgets.data}
             categories={categories.data}
-            transactions={transactions.data.items}
+            transactions={transactions.data}
             onEdit={openForm}
           />
         )}

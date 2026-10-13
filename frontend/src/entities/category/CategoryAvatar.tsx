@@ -1,5 +1,6 @@
 import type { SvgIconComponent } from '@mui/icons-material'
 import Avatar from '@mui/material/Avatar'
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined'
 import CardGiftcardOutlinedIcon from '@mui/icons-material/CardGiftcardOutlined'
 import CheckroomOutlinedIcon from '@mui/icons-material/CheckroomOutlined'
 import DirectionsBusOutlinedIcon from '@mui/icons-material/DirectionsBusOutlined'
@@ -15,7 +16,7 @@ import SportsEsportsOutlinedIcon from '@mui/icons-material/SportsEsportsOutlined
 import WorkOutlineOutlinedIcon from '@mui/icons-material/WorkOutlineOutlined'
 import type { Category, CategoryIconKey } from './model'
 
-const icons: Record<CategoryIconKey, SvgIconComponent> = {
+const icons: Partial<Record<CategoryIconKey, SvgIconComponent>> = {
   salary: WorkOutlineOutlinedIcon,
   freelance: LaptopMacOutlinedIcon,
   cashback: PercentOutlinedIcon,
@@ -37,7 +38,7 @@ type CategoryAvatarProps = {
 }
 
 export function CategoryAvatar({ category, size = 40 }: CategoryAvatarProps) {
-  const Icon = icons[category.icon]
+  const Icon = icons[category.icon] ?? CategoryOutlinedIcon
   return (
     <Avatar sx={{ width: size, height: size, bgcolor: category.color }}>
       <Icon sx={{ fontSize: size * 0.55 }} />

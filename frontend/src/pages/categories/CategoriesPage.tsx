@@ -20,7 +20,7 @@ import { TransitionGroup } from 'react-transition-group'
 import { CategoryAvatar, categoriesQuery, categoryTypeLabels, type Category, type CategoryType } from '@/entities/category'
 import { CategoryFormDialog } from '@/features/category-form'
 import { DeleteCategoryDialog } from '@/features/delete-category'
-import { ALL_TRANSACTIONS, transactionsQuery, type Transaction } from '@/entities/transaction'
+import { allTransactionsQuery, type Transaction } from '@/entities/transaction'
 import { operationsCount } from '@/shared/lib/plural'
 import { PageHeader, QueryState } from '@/shared/ui'
 
@@ -28,7 +28,7 @@ const categoryTypes: CategoryType[] = ['expense', 'income']
 
 export function CategoriesPage() {
   const categories = useQuery(categoriesQuery())
-  const transactions = useQuery(transactionsQuery({ size: ALL_TRANSACTIONS }))
+  const transactions = useQuery(allTransactionsQuery())
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Category | null>(null)
 
@@ -50,7 +50,7 @@ export function CategoriesPage() {
       />
       <QueryState queries={[categories, transactions]}>
         {categories.data && transactions.data && (
-          <CategoriesContent categories={categories.data} transactions={transactions.data.items} onEdit={openForm} />
+          <CategoriesContent categories={categories.data} transactions={transactions.data} onEdit={openForm} />
         )}
       </QueryState>
       <CategoryFormDialog open={formOpen} category={editing} onClose={() => setFormOpen(false)} />
