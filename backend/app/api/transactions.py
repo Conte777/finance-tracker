@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query, status
 
+from app.api.deps import CurrentUser
 from app.db import SessionDep
 from app.models import Transaction
 from app.schemas.common import Page
@@ -18,29 +19,33 @@ router = APIRouter(prefix="/transactions", tags=["transactions"])
 
 @router.get("", response_model=Page[TransactionRead])
 async def list_transactions(
-    session: SessionDep, f: Annotated[TransactionFilter, Query()]
+    session: SessionDep, user: CurrentUser, f: Annotated[TransactionFilter, Query()]
 ) -> Page[TransactionRead]:
-    items, total = await service.list_transactions(session, f)
+    items, total = await service.list_transactions(session, user.id, f)
     return Page(items=[TransactionRead.model_validate(t) for t in items], total=total)
 
 
 @router.get("/{transaction_id}", response_model=TransactionRead)
-async def get_transaction(transaction_id: int, session: SessionDep) -> Transaction:
-    return await service.get_transaction(session, transaction_id)
+async def get_transaction(
+    transaction_id: int, session: SessionDep, user: CurrentUser
+) -> Transaction:
+    return await service.get_transaction(session, user.id, transaction_id)
 
 
 @router.post("", response_model=TransactionRead, status_code=status.HTTP_201_CREATED)
-async def create_transaction(data: TransactionCreate, session: SessionDep) -> Transaction:
-    return await service.create_transaction(session, data)
+async def create_transaction(
+    data: TransactionCreate, session: SessionDep, user: CurrentUser
+) -> Transaction:
+    return await service.create_transaction(session, user.id, data)
 
 
 @router.patch("/{transaction_id}", response_model=TransactionRead)
 async def update_transaction(
-    transaction_id: int, data: TransactionUpdate, session: SessionDep
+    transaction_id: int, data: TransactionUpdate, session: SessionDep, user: CurrentUser
 ) -> Transaction:
-    return await service.update_transaction(session, transaction_id, data)
+    return await service.update_transaction(session, user.id, transaction_id, data)
 
 
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_transaction(transaction_id: int, session: SessionDep) -> None:
-    await service.delete_transaction(session, transaction_id)
+async def delete_transaction(transaction_id: int, session: SessionDep, user: CurrentUser) -> None:
+    await service.delete_transaction(session, user.id, transaction_id)

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, status
 
+from app.api.deps import CurrentUser
 from app.db import SessionDep
 from app.models import Budget
 from app.schemas.budget import BudgetCreate, BudgetRead, BudgetUpdate
@@ -9,25 +10,27 @@ router = APIRouter(prefix="/budgets", tags=["budgets"])
 
 
 @router.get("", response_model=list[BudgetRead])
-async def list_budgets(session: SessionDep) -> list[Budget]:
-    return await service.list_budgets(session)
+async def list_budgets(session: SessionDep, user: CurrentUser) -> list[Budget]:
+    return await service.list_budgets(session, user.id)
 
 
 @router.get("/{budget_id}", response_model=BudgetRead)
-async def get_budget(budget_id: int, session: SessionDep) -> Budget:
-    return await service.get_budget(session, budget_id)
+async def get_budget(budget_id: int, session: SessionDep, user: CurrentUser) -> Budget:
+    return await service.get_budget(session, user.id, budget_id)
 
 
 @router.post("", response_model=BudgetRead, status_code=status.HTTP_201_CREATED)
-async def create_budget(data: BudgetCreate, session: SessionDep) -> Budget:
-    return await service.create_budget(session, data)
+async def create_budget(data: BudgetCreate, session: SessionDep, user: CurrentUser) -> Budget:
+    return await service.create_budget(session, user.id, data)
 
 
 @router.patch("/{budget_id}", response_model=BudgetRead)
-async def update_budget(budget_id: int, data: BudgetUpdate, session: SessionDep) -> Budget:
-    return await service.update_budget(session, budget_id, data)
+async def update_budget(
+    budget_id: int, data: BudgetUpdate, session: SessionDep, user: CurrentUser
+) -> Budget:
+    return await service.update_budget(session, user.id, budget_id, data)
 
 
 @router.delete("/{budget_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_budget(budget_id: int, session: SessionDep) -> None:
-    await service.delete_budget(session, budget_id)
+async def delete_budget(budget_id: int, session: SessionDep, user: CurrentUser) -> None:
+    await service.delete_budget(session, user.id, budget_id)
