@@ -1,15 +1,25 @@
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router/dom'
 import '@fontsource/roboto/400.css'
 import '@fontsource/roboto/500.css'
 import '@fontsource/roboto/600.css'
 import '@fontsource/roboto/700.css'
+import { sessionKeys } from '@/entities/session'
+import { ApiError } from '@/shared/api'
 import { router } from './router'
 import { theme } from './theme'
 
-const queryClient = new QueryClient({
+const endSessionOnUnauthorized = (error: Error) => {
+  if (error instanceof ApiError && error.status === 401) {
+    queryClient.setQueryData(sessionKeys.all, null)
+  }
+}
+
+const queryClient: QueryClient = new QueryClient({
+  queryCache: new QueryCache({ onError: endSessionOnUnauthorized }),
+  mutationCache: new MutationCache({ onError: endSessionOnUnauthorized }),
   defaultOptions: {
     queries: { retry: false, refetchOnWindowFocus: false },
   },

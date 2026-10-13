@@ -8,20 +8,31 @@ import { ReportsPage } from '@/pages/reports'
 import { LoginPage } from '@/pages/login'
 import { RegisterPage } from '@/pages/register'
 import { NotFoundPage } from '@/pages/not-found'
+import { GuestOnly, RequireAuth } from './guards'
 
 export const router = createBrowserRouter([
   {
-    path: '/',
-    Component: AppLayout,
+    Component: RequireAuth,
     children: [
-      { index: true, Component: DashboardPage },
-      { path: 'transactions', Component: TransactionsPage },
-      { path: 'categories', Component: CategoriesPage },
-      { path: 'budgets', Component: BudgetsPage },
-      { path: 'reports', Component: ReportsPage },
-      { path: '*', Component: NotFoundPage },
+      {
+        path: '/',
+        Component: AppLayout,
+        children: [
+          { index: true, Component: DashboardPage },
+          { path: 'transactions', Component: TransactionsPage },
+          { path: 'categories', Component: CategoriesPage },
+          { path: 'budgets', Component: BudgetsPage },
+          { path: 'reports', Component: ReportsPage },
+          { path: '*', Component: NotFoundPage },
+        ],
+      },
     ],
   },
-  { path: '/login', Component: LoginPage },
-  { path: '/register', Component: RegisterPage },
+  {
+    Component: GuestOnly,
+    children: [
+      { path: '/login', Component: LoginPage },
+      { path: '/register', Component: RegisterPage },
+    ],
+  },
 ])
