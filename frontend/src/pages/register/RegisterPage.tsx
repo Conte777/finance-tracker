@@ -35,7 +35,10 @@ export function RegisterPage() {
 
   const signUp = useMutation({
     mutationFn: register,
-    onSuccess: (user) => queryClient.setQueryData(sessionKeys.all, user),
+    onSuccess: (user) => {
+      queryClient.removeQueries({ predicate: ({ queryKey }) => queryKey[0] !== sessionKeys.all[0] })
+      queryClient.setQueryData(sessionKeys.all, user)
+    },
     onError: (error) => {
       if (error instanceof ApiError && error.status === 409) {
         setError('email', { message: 'Этот email уже зарегистрирован' })

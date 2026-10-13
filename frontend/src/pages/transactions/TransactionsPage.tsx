@@ -133,6 +133,7 @@ export function TransactionsPage() {
             }}
             sx={{ flexGrow: 1 }}
             slotProps={{
+              htmlInput: { maxLength: 100 },
               input: {
                 startAdornment: (
                   <InputAdornment position="start">

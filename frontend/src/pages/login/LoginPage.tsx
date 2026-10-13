@@ -31,7 +31,10 @@ export function LoginPage() {
 
   const signIn = useMutation({
     mutationFn: login,
-    onSuccess: (user) => queryClient.setQueryData(sessionKeys.all, user),
+    onSuccess: (user) => {
+      queryClient.removeQueries({ predicate: ({ queryKey }) => queryKey[0] !== sessionKeys.all[0] })
+      queryClient.setQueryData(sessionKeys.all, user)
+    },
   })
 
   const formError = signIn.isError
