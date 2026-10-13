@@ -7,12 +7,13 @@ import Drawer from '@mui/material/Drawer'
 import IconButton from '@mui/material/IconButton'
 import Stack from '@mui/material/Stack'
 import Toolbar from '@mui/material/Toolbar'
-import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined'
-import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined'
 import MenuIcon from '@mui/icons-material/Menu'
-import { Link, Outlet } from 'react-router'
+import { useQuery } from '@tanstack/react-query'
+import { Outlet } from 'react-router'
+import { sessionQuery, userInitials } from '@/entities/session'
+import { LogoutButton } from '@/features/logout'
 import { NavMenu } from './NavMenu'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -31,6 +32,7 @@ function Brand() {
 
 export function AppLayout() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { data: user } = useQuery(sessionQuery())
   const closeMobile = () => setMobileOpen(false)
 
   const drawerContent = (
@@ -71,15 +73,13 @@ export function AppLayout() {
           <Box sx={{ flexGrow: 1 }} />
           <ThemeToggle />
           <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', ml: 1.5 }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 14 }}>АК</Avatar>
+            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 14 }}>
+              {user && userInitials(user.name)}
+            </Avatar>
             <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>
-              Алексей К.
+              {user?.name}
             </Typography>
-            <Tooltip title="Выйти">
-              <IconButton component={Link} to="/login" aria-label="Выйти">
-                <LogoutOutlinedIcon />
-              </IconButton>
-            </Tooltip>
+            <LogoutButton />
           </Stack>
         </Toolbar>
       </AppBar>
