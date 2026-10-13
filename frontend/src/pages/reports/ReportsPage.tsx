@@ -1,18 +1,15 @@
 import { useState } from 'react'
-import Alert from '@mui/material/Alert'
-import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import CardHeader from '@mui/material/CardHeader'
 import Grid from '@mui/material/Grid'
 import MenuItem from '@mui/material/MenuItem'
-import Snackbar from '@mui/material/Snackbar'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import { BarChart } from '@mui/x-charts/BarChart'
 import { PieChart } from '@mui/x-charts/PieChart'
 import { useQuery } from '@tanstack/react-query'
+import { ExportCsvButton } from '@/features/export-transactions'
 import { categoriesQuery, indexCategories, type Category } from '@/entities/category'
 import {
   allTransactionsQuery,
@@ -31,7 +28,6 @@ export function ReportsPage() {
   const categories = useQuery(categoriesQuery())
   const transactions = useQuery(allTransactionsQuery())
   const [selectedMonth, setMonth] = useState<string | null>(null)
-  const [exportNotice, setExportNotice] = useState(false)
 
   const months = [
     ...new Set([currentMonth(), ...(transactions.data ?? []).map((t) => t.date.slice(0, 7))]),
@@ -52,9 +48,7 @@ export function ReportsPage() {
                 </MenuItem>
               ))}
             </TextField>
-            <Button variant="outlined" startIcon={<FileDownloadOutlinedIcon />} onClick={() => setExportNotice(true)}>
-              Экспорт CSV
-            </Button>
+            <ExportCsvButton transactions={transactions.data} categories={categories.data} />
           </Stack>
         }
       />
@@ -64,17 +58,6 @@ export function ReportsPage() {
           <ReportsContent categories={categories.data} transactions={transactions.data} months={months} month={month} />
         )}
       </QueryState>
-
-      <Snackbar
-        open={exportNotice}
-        autoHideDuration={4000}
-        onClose={() => setExportNotice(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert severity="info" variant="filled" onClose={() => setExportNotice(false)}>
-          Экспорт в CSV появится после подключения backend
-        </Alert>
-      </Snackbar>
     </>
   )
 }
